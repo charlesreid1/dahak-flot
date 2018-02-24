@@ -77,12 +77,12 @@ Snakefile:
     This roughly maps to applications - one subtask is usually completed with one application.
     (Example: downloading a tarball.)
 
-* **Atomic Tasks**: Each subtask consists of a few atomic tasks (simple algebra operations).
+* **Atomic Tasks**: Each subtask consists of a few atomic tasks (Example: simple algebra operations).
     * The atomic tasks are carried out.
     * The subtask aggregates these into a final result.
     * This makes workflows more flexible and modular.
 
-* **Aggregation**: Each subtask aggregates the results of the atomic tasks (e.g., a sum or product).
+* **Aggregation**: Each subtask aggregates the results of the atomic tasks (Example: taking sum or product).
     Likewise, the final master task aggregates the results of each subtask.
 
 ## What's In Each Subtask Directory
