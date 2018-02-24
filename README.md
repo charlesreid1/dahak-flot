@@ -1,6 +1,6 @@
 # dahak-flot
 
-Snakemake workflows for dahak.
+Snakemake workflows for dahak. (*flot* is French for flow.)
 
 This repo assumes you have a version of `conda` installed.
 
