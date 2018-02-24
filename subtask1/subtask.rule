@@ -4,7 +4,7 @@ FILESIN  = glob.glob("task*.txt")
 COLLECT  = 'sum.out'
 
 # Master subtask: accumulate value of expressions in .out files
-rule all:
+rule subtask1:
     input: FILESIN
     output: COLLECT
     run:
@@ -18,7 +18,7 @@ rule all:
 ## -------------------------------------
 ## To add an atomic rule operating on
 ## each input file, use below:
-#rule myrule:
+#rule atomictask:
 #    input:
 #        'task{name}.txt'
 #    output:
