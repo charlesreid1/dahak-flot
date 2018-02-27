@@ -4,9 +4,9 @@
 
 * `inputs/` - data that will not change (sequences, CSVs, adapters, etc.)
 * `envs/` - conda environment descriptions
-* `outputs/` - intermediate and final files go into outputs
+* `data/` - intermediate and final data files go into `data` dir
     * Subdirectories contain results from intermediate steps
-    * Example: `outputs/signatures` for signatures, `outputs/SBTs` for SBTs
+    * Example: `data/sig` for signatures, `data/sbt` for SBTs
 * `cloud/` - files for submitting cloud/cluster jobs to run Snakemake workflows
 * `notebooks/` - Jupyter Notebooks
 
