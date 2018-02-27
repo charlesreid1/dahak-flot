@@ -13,7 +13,7 @@
 ## Organizing Rules
 
 We follow the recommendations of the
-[Snakemake examples repo](https://percyfal.github.io/snakemake-rules/docs/configuration.html):
+[Snakemake examples repo](https://github.com/percyfal/snakemake-rules):
 
 > Rules are organized by application directories. Each directory contains a 
 > settings file, that initializes global configuration variables, and to 
