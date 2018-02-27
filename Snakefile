@@ -93,12 +93,17 @@ rule calculate_signatures:
 
     NOTE: Ugh, lots of copypasta.
     There is a mismatch between file prefixes, even thoguh file names are fine.
-    Should we stuff processed inputs/outpus into parameters, processed via lambda func?
+
+    Should we use lambda functions to stuff path-stripped
+    inputs/outputs into parameters?
     """
     input:
         'data/{base}_1.trim{ntrim}.fq.gz', 'data/{base}_1.trim{ntrim}.fq.gz'
     output:
         'data/{base}.trim{ntrim}.scaled10k.k21_31_51.sig'
+    params:
+        # Yucky
+        siginputs = lambda x : "/data/" + os.path.split("{input}")[-1]
     shell:
         '''
         docker run \
@@ -139,6 +144,8 @@ rule unpack_kaiju:
 rule run_kaiju:
     """
     Run kaiju
+
+    Question: how to refer to inputs by index? {index}@[0]???
     """
     input:
         'data/kaijudb/nodes.dmp',
