@@ -1,0 +1,26 @@
+from snakemake.utils import update_config
+
+# Questions:
+# - can you put wildcards like {database} or {ksize} into these strings?
+
+config_default = {
+
+    'sourmash' : {
+        'sbturl'  : 's3-us-west-1.amazonaws.com/spacegraphcats.ucdavis.edu',
+        'quayurl' : 'quay.io/biocontainers/sourmash',
+        'version' : '2.0.0a3--py36_0'
+    },
+    'kaiju' : {
+        'quayurl' : 'quay.io/biocontainers/kaiju',
+        'version' : '1.6.1--pl5.22.0_0'
+    },
+    'krona' : {
+        'quayurl' : 'quay.io/krona',
+        'version' : '2.7--pl5.22.0_1'
+    }
+
+}
+
+update_config(config_default, config)
+config = config_default
+

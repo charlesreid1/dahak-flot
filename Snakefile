@@ -10,7 +10,11 @@ classification workflow.
 """
 
 
+include: 'taxclass.settings'
+
+
 # Parameters:
+# ------------
 
 
 # hat tip: https://github.com/dib-lab/2017-paper-gather/
@@ -37,6 +41,7 @@ with open('trimmed_data.dat','r') as f:
 
 
 # Rules:
+# ------------
 
 
 rule pull_biocontainers:
@@ -48,7 +53,7 @@ rule pull_biocontainers:
     output:
         touch('.pulled_containers')
     params:
-        quayurl = QUAYURL
+        quayurl = [config[k]['ayurl']+":"+config[k]['version'] for k in config.keys()]
     shell:
         '''
         docker pull {params.quayurl}
@@ -65,11 +70,12 @@ rule download_sourmash_sbts:
         'data/sourmash/{database}-k{ksize}.sbt.json'
     input: 
         '.pulled_containers'
-        HTTP.remote('s3-us-west-1.amazonaws.com/spacegraphcats.ucdavis.edu/microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz')
+        HTTP.remote(config['sourmash']['sbturl']+"/microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz")
     shell: 
         '''
         tar xf {input} -C data/sourmash
         '''
+
 
 rule download_trimmed_data:
     """
@@ -96,6 +102,8 @@ rule calculate_signatures:
 
     Should we use lambda functions to stuff path-stripped
     inputs/outputs into parameters?
+
+    How to refer to input number 1, input number 2, etc.?
     """
     input:
         'data/{base}_1.trim{ntrim}.fq.gz', 'data/{base}_1.trim{ntrim}.fq.gz'
@@ -145,7 +153,7 @@ rule run_kaiju:
     """
     Run kaiju
 
-    Question: how to refer to inputs by index? {index}@[0]???
+    How to refer to inputs by index?
     """
     input:
         'data/kaijudb/nodes.dmp',
