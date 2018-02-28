@@ -1,5 +1,9 @@
 # How This Repo Is Organized
 
+Hat tip to [@luiziber](https://github.com/luizirber) on the directory structure.
+
+Hat tip to [snakemake-rules repo](https://github.com/percyfal/snakemake-rules) for example Snakefile rules and guiding principles.
+
 ## Directory Structure
 
 * `inputs/` - data that will not change (sequences, CSVs, adapters, etc.)
@@ -13,14 +17,13 @@
 ## Organizing Rules
 
 We follow the recommendations of the
-[Snakemake examples repo](https://github.com/percyfal/snakemake-rules):
+[snakemake-rules repo](https://github.com/percyfal/snakemake-rules):
 
 > Rules are organized by application directories. Each directory contains a 
 > settings file, that initializes global configuration variables, and to 
 > define default configuration values applicable to all rules for the given 
 > application. The actual application rules are stored one rule per file with 
 > suffix .rule. 
-
 
 ## Principles
 
