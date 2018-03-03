@@ -199,12 +199,14 @@ rule unpack_kaiju:
         '''
 
 
-# --
-
-
 kaiju_input_names = [kaiju_dmp, kaiju_fmi]
 run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
 run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
+
+kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
+kaiju_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out'
+run_kaiju_output = os.path.join(data_dir,kaiju_output_name)
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
 rule run_kaiju:
     """
@@ -213,24 +215,25 @@ rule run_kaiju:
     input:
         run_kaiju_input
     output:
-        'data/{base}.kaiju_output.trim{ntrim}.out'
+        run_kaiju_output
     shell:
         '''
         docker run \
                 -v {PWD}/{data_dir}:/data \
-                {config['kaiju']['quayurl']}:{config['kaiju']['version']} \
+                {quayurl} \
                 kaiju \
                 -x \
                 -v \
-                -t /data/kaijudb/nodes.dmp \
-                -f /data/kaijudb/kaiju_db_nr_euk.fmi \
-                -i /data/{wildcards.base}_1.trim{wildcards.ntrim}.fq.gz \
-                -j /data/{wildcards.base}_2.trim{wildcards.ntrim}.fq.gz \
-                -o /data/{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out \
+                -t /data/{kaiju_dir}/nodes.dmp \
+                -f /data/{kaiju_dir}/kaiju_db_nr_euk.fmi \
+                -i /data/{fq_fwd_wc} \
+                -j /data/{fq_rev_wc} \
+                -o /data/{kaiju_output_name_wc} \
                 -z 4
         '''
 
 
+# --
 
 k2k_in = data_dir,kaiju_dir,
 
