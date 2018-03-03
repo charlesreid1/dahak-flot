@@ -1,4 +1,5 @@
 import glob
+import os
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 
 
@@ -7,42 +8,46 @@ Taxonomic Classification Snakefile
 
 This Snakefile defines tasks for the taxonomic
 classification workflow.
+
+Notes: 
+
+We define a block of variables before each rule that 
+specify input/output files and any parameters for the 
+commands. This makes it easy to change hard-coded 
+variables into config params from a .settings file.
+
+Dealing with directories and filenames is extremely awkward.
+We have several filenames to deal with - multiple input & output files - 
+and for each one, we have to assemble the filename itself,
+the local path to the file, the container path to the file,
+the absolute path to the file (for mounting directories in Docker),
+and often the output file names depend on the input file names.
+
+Furthermore, we have the additional complication that 
+the tags {base} and {ntrim} in the input/output blocks 
+become {wildcards.base} and {wildcards.ntrim} in run/shell blocks.
+Snakemake does not go out of its way to ease any of this.
 """
 
 
+# Need PWD for Docker
+PWD = os.get_cwd()
+
+
+# Settings for this particular run
+include: '2018-03-01.settings'
+
+# Settings common to all 
+# taxonomic classification workflows
 include: 'taxclass.settings'
-
-
-# Parameters:
-# ------------
-
-
-# hat tip: https://github.com/dib-lab/2017-paper-gather/
-HTTP = HTTPRemoteProvider()
-
-QUAYURL = [ "quay.io/biocontainers/sourmash:2.0.0a3--py36_0",
-            "quay.io/biocontainers/krona:2.7--pl5.22.0_1",
-            "quay.io/biocontainers/kaiju:1.5.0--pl5.22.0_0"]
-
-# ------8<---------------
-# Get trimmed data filename and OSF URL
-#
-# This step should be replaced 
-# with OSF CLI
-# 
-TRIMFNAME = []
-TRIMURL = []
-with open('trimmed_data.dat','r') as f:
-    for ln in f.readlines():
-        line = ln.split()
-        TRIMFNAME.append(line[0])
-        TRIMURL.append(line[1])
-# -----8<----------------
 
 
 # Rules:
 # ------------
 
+
+def getquayurls():
+    return [config[k]['quayurl']+":"+config[k]['version'] for k in config.keys()]
 
 rule pull_biocontainers:
     """
@@ -53,29 +58,44 @@ rule pull_biocontainers:
     output:
         touch('.pulled_containers')
     params:
-        quayurl = [config[k]['ayurl']+":"+config[k]['version'] for k in config.keys()]
-    shell:
-        '''
-        docker pull {params.quayurl}
-        '''
+        quayurls = getquayurls
+    run:
+        for quayurl in params.quayurls:
+            subprocess.call(["docker","pull",quayurl])
 
+
+sourmash_dir = os.path.join(data_dir,'sourmash')
+sourmash_sbt_outputs = os.path.join(sourmash_dir,'{database}-k{ksize}.sbt.json')
+sourmash_sbt_inputs = HTTP.remote(config['sourmash']['sbturl']+"/microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz")
 
 rule download_sourmash_sbts:
     """
     Downoad the sourmash SBTs from spacegraphcats
 
-    To call this rule, request sourmash SBT for the specified database.
+    To call this rule, request sourmash SBT json file for the specified database.
     """
     output: 
-        'data/sourmash/{database}-k{ksize}.sbt.json'
+        sourmash_sbt_outputs
     input: 
-        '.pulled_containers'
-        HTTP.remote(config['sourmash']['sbturl']+"/microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz")
+        '.pulled_containers',
+        sourmash_sbt_inputs
     shell: 
         '''
-        tar xf {input} -C data/sourmash
+        tar xf {input} -C {sourmash_dir}
         '''
 
+
+# Get trimmed data filename and OSF URL
+# TODO:
+# This step should be replaced 
+# with OSF CLI
+trimmed_data_fnames = []
+trimmed_data_urls = []
+with open('trimmed_data.dat','r') as f:
+    for ln in f.readlines():
+        line = ln.split()
+        trimmed_data_fnames.append(line[0])
+        trimmed_data_urls.append(line[1])
 
 rule download_trimmed_data:
     """
@@ -84,102 +104,167 @@ rule download_trimmed_data:
     To call this rule, request the files listed in trimmed_data.dat
     """
     output:
-        TRIMFNAME
+        trimmed_data_fnames
     params:
-        url = TRIMURL
+        url = trimmed_data_urls
     shell:
         '''
         curl {params.url} -o {output}
         '''
 
 
+# This code is super awkward.
+#
+# Trying to deal with the plain filename,
+# the local dir prefix plus the filename,
+# the container dir prefix plus the filename,
+# all of this for both the inputs and the outputs,
+# plus the output file name depends on the input file name,
+# plus the tags {base} and {ntrim} in input/output blocks
+# are {wildcards.base} and {wildcards.ntrim} in run/shell blocks.
+# 
+# Snakemake does not provide any way of doing this gracefully.
+
+fq_fwd = '{base}_1.trim{ntrim}.fq.gz' 
+fq_rev = '{base}_2.trim{ntrim}.fq.gz'
+
+fq_fwd_wc = '{wildcards.base}_1.trim{wildcards.ntrim}.fq.gz' 
+fq_rev_wc = '{wildcards.base}_2.trim{wildcards.ntrim}.fq.gz' 
+
+fq_names = [fq_fwd, fq_rev]
+sig_name =  '{base}.trim{ntrim}.scaled10k.k21_31_51.sig'
+sig_name_wc =  '{wildcards.base}.trim{wildcards.ntrim}.scaled10k.k21_31_51.sig'
+
+merge_file = "{base}.trim{ntrim}.fq.gz"
+merge_file_wc = "{wildcards.base}.trim{wildcards.ntrim}.fq.gz"
+
+sig_inputs = [os.path.join(data_dir,fq) for fq in fq_names]
+sig_output = os.path.join(data_dir,sig_name)
+
 rule calculate_signatures:
     """
     Calculate signatures from trimmed data using sourmash
 
-    NOTE: Ugh, lots of copypasta.
-    There is a mismatch between file prefixes, even thoguh file names are fine.
-
-    Should we use lambda functions to stuff path-stripped
-    inputs/outputs into parameters?
-
-    How to refer to input number 1, input number 2, etc.?
     """
     input:
-        'data/{base}_1.trim{ntrim}.fq.gz', 'data/{base}_1.trim{ntrim}.fq.gz'
+        sig_inputs
     output:
-        'data/{base}.trim{ntrim}.scaled10k.k21_31_51.sig'
+        sig_output, merge_file
     params:
-        # Yucky
-        siginputs = lambda x : "/data/" + os.path.split("{input}")[-1]
+        quayurl = config['sourmash']['quayurl']+":"+config['sourmash']['version']
     shell:
         '''
         docker run \
-                -v ${PWD}/data:/data \
-                quay.io/biocontainers/sourmash:2.0.0a3--py36_0 \
+                -v {PWD}/{data_dir}:/data \
+                {params.quayurl} \
                 sourmash compute \
-                --merge /data/{wildcards.base}.trim{wildcards.ntrim}.fq.gz \
+                --merge /data/{merge_file_wc} \
                 --track-abundance \
                 --scaled 10000 \
                 -k 21,31,51 \
-                /data/{base}_1.trim{wildcards.ntrim}.fq.gz \
-                /data/{base}_2.trim{wildcards.ntrim}.fq.gz \
-                -o /data/{base}.trim{ntrim}.scaled10k.k21_31_51.sig
+                /data/{fq_fwd_wc} \
+                /data/{fq_rev_wc} \
+                -o /data/{sig_name_wc}
         '''
 
+
+
+kaiju_dirname = 'kaijudb'
+kaiju_dir = os.path.join(data_dir,kaiju_dirname)
+kaiju_dmp = 'nodes.dmp'
+kaiju_fmi = 'kaiju_db_nr_euk.fmi'
+kaiju_tar = 'kaiju_index_nr_euk.tgz'
+kaiju_url = 'http://kaiju.binf.ku.dk/database'
+
+kaiju_output_names = [kaiju_dmp, kaiju_fmi]
+unpack_kaiju_output = [os.path.join(kaiju_dir,f) for f in kaiju_output_names]
+unpack_kaiju_input = HTTP.remote(kaiju_url)
 
 rule unpack_kaiju:
     """
-    Download and unpack the kaiju database
+    Download and unpack the kaiju database.
+    The ( ) notation in the shell creates a temporary scope.
     """
     output:
-        'data/kaijudb/nodes.dmp',
-        'data/kaijudb/kaiju_db_nr_euk.fmi'
-    params:
-        kaijutar='kaiju_index_nr_euk.tgz',
-        kaijuurl='http://kaiju.binf.ku.dk/database'
+        unpack_kaiju_output
     shell:
         '''
-        mkdir -p data/kaijudb
-        cd data/kaijudb
-        curl -LO "{params.kaijuurl}/{params.kaijutar}"
-        tar xzf {params.kaijutar}
-        rm -f {params.kaijutar}
-        cd ../../
+        mkdir -p {kaiju_dir} 
+        (
+        cd {kaiju_dir}
+        curl -LO "{kaiju_url}/{kaiju_tar}"
+        tar xzf {kaiju_tar}
+        rm -f {kaiju_tar}
+        )
         '''
 
+
+# --
+
+
+kaiju_input_names = [kaiju_dmp, kaiju_fmi]
+run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
+run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
 
 rule run_kaiju:
     """
     Run kaiju
-
-    How to refer to inputs by index?
     """
     input:
-        'data/kaijudb/nodes.dmp',
-        'data/kaijudb/kaiju_db_nr_euk.fmi',
-        'data/{base}_1.trim{ntrim}.fq.gz', 
-        'data/{base}_1.trim{ntrim}.fq.gz'
+        run_kaiju_input
     output:
         'data/{base}.kaiju_output.trim{ntrim}.out'
     shell:
         '''
         docker run \
-                -v ${PWD}/data:/data \
-                quay.io/biocontainers/kaiju:1.6.1--pl5.22.0_0 \
+                -v {PWD}/{data_dir}:/data \
+                {config['kaiju']['quayurl']}:{config['kaiju']['version']} \
                 kaiju \
                 -x \
                 -v \
                 -t /data/kaijudb/nodes.dmp \
                 -f /data/kaijudb/kaiju_db_nr_euk.fmi \
-                -i /data/{base}_1.trim{ntrim}.fq.gz \
-                -j /data/{base}_2.trim{ntrim}.fq.gz \
-                -o /data/{base}.kaiju_output.trim{ntrim}.out \
+                -i /data/{wildcards.base}_1.trim{wildcards.ntrim}.fq.gz \
+                -j /data/{wildcards.base}_2.trim{wildcards.ntrim}.fq.gz \
+                -o /data/{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out \
                 -z 4
         '''
 
 
 
+k2k_in = data_dir,kaiju_dir,
+
+rule kaiju2krona:
+    """
+    Convert kaiju results to krona results,
+    and generate a report.
+    """
+    input:
+        'data/kaiju/{prefix}.trim2.out'
+    output:
+        'data/krona/{prefix}.kaiju.out.krona'
+    params:
+        kaijuurl="quay.io/iocontainers/kaiju:1.6.1--pl5.22.0_0"
+        kaijudir="kaijudb"
+    shell:
+        '''
+        docker run \
+            -v {data_dir}:/data \
+            {kaijuurl} \
+            kaiju2krona \
+            -v \
+            -t /data/{kaiju_dir}/nodes.dmp \
+            -n /data/{kaiju_dir}/names.dmp \
+            -i /data/${i} \
+            -o /data/${i}.kaiju.out.krona
+        '''
+
+
+
+
+
+
+rule filter_taxa:
 
 
 
@@ -194,6 +279,7 @@ rule cleanreally:
 
 onsuccess:
     shell("rm -f .pulled_containers")
+
 
 
 
