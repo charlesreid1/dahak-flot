@@ -224,8 +224,8 @@ rule run_kaiju:
                 kaiju \
                 -x \
                 -v \
-                -t /data/{kaiju_dir}/nodes.dmp \
-                -f /data/{kaiju_dir}/kaiju_db_nr_euk.fmi \
+                -t /data/{kaiju_dir}/{kaiju_dmp} \
+                -f /data/{kaiju_dir}/{kaiju_fmi} \
                 -i /data/{fq_fwd_wc} \
                 -j /data/{fq_rev_wc} \
                 -o /data/{kaiju_output_name_wc} \
