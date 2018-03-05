@@ -172,6 +172,7 @@ rule calculate_signatures:
 kaiju_dirname = 'kaijudb'
 kaiju_dir = os.path.join(data_dir,kaiju_dirname)
 kaiju_dmp = 'nodes.dmp'
+kaiju_dmp2 = 'names.dmp'
 kaiju_fmi = 'kaiju_db_nr_euk.fmi'
 kaiju_tar = 'kaiju_index_nr_euk.tgz'
 kaiju_url = 'http://kaiju.binf.ku.dk/database'
@@ -206,6 +207,7 @@ run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
 kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
 kaiju_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out'
 run_kaiju_output = os.path.join(data_dir,kaiju_output_name)
+
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
 rule run_kaiju:
@@ -233,9 +235,16 @@ rule run_kaiju:
         '''
 
 
-# --
+kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
 
-k2k_in = data_dir,kaiju_dir,
+kaiju2krona_in_name_wc = kaiju_output_name_wc # just the -i in file
+
+kaiju2krona_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
+kaiju2krona_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona'
+kaiju2krona_output = os.path.join(data_dir,kaiju2krona_output_name)
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
 rule kaiju2krona:
     """
@@ -243,32 +252,157 @@ rule kaiju2krona:
     and generate a report.
     """
     input:
-        'data/kaiju/{prefix}.trim2.out'
+        kaiju2krona_input
     output:
-        'data/krona/{prefix}.kaiju.out.krona'
-    params:
-        kaijuurl="quay.io/iocontainers/kaiju:1.6.1--pl5.22.0_0"
-        kaijudir="kaijudb"
+        kaiju2krona_output
     shell:
         '''
         docker run \
-            -v {data_dir}:/data \
-            {kaijuurl} \
-            kaiju2krona \
-            -v \
-            -t /data/{kaiju_dir}/nodes.dmp \
-            -n /data/{kaiju_dir}/names.dmp \
-            -i /data/${i} \
-            -o /data/${i}.kaiju.out.krona
+                -v {data_dir}:/data \
+                {quayurl} \
+                kaiju2krona \
+                -v \
+                -t /data/{kaiju_dir}/{kaiju_dmp} \
+                -n /data/{kaiju_dir}/{kaiju_dmp2} \
+                -i /data/{kaiju2krona_in_name_wc} \
+                -o /data/{kaiju2krona_output_name_wc}
         '''
 
 
+kaiju2kronasummary_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+kaiju2kronasummary_input = [os.path.join(kaiju_dir,f) for f in kaiju2kronasummary_input_names]
+
+kaiju2kronasummary_in_name_wc = kaiju_output_name_wc # just the -i in file
+
+kaiju2kronasummary_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.summary'
+kaiju2kronasummary_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona.summary'
+kaiju2kronasummary_output = os.path.join(data_dir,kaiju2kronasummary_output_name)
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule kaiju2kronasummary:
+    """
+    Convert kaiju results to krona results,
+    and generate a report.
+    """
+    input:
+        kaiju2kronasummary_input
+    output:
+        kaiju2kronasummary_output
+    shell:
+        '''
+        docker run \
+                -v {data_dir}:/data \
+                {quayurl} \
+                kaijuReport \
+                -v \
+                -t /data/{kaiju_dir}/{kaiju_dmp} \
+                -n /data/{kaiju_dir}/{kaiju_dmp2} \
+                -i /data/{kaiju2kronasummary_in_name_wc} \
+                -r genus \
+                -o /data/{kaiju2kronasummary_output_name_wc}
+        '''
 
 
+filter_taxa_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+filter_taxa_input = [os.path.join(kaiju_dir,f) for f in filter_taxa_input_names]
+
+filter_taxa_in_name_wc = kaiju_output_name_wc # just the -i in file
+
+filter_taxa_total_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percenttotal.summary'
+filter_taxa_total_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona.1percenttotal.summary'
+filter_taxa_total_output = os.path.join(data_dir,kaiju2kronasummary_output_name)
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule filter_taxa_total:
+    """
+    Filter out taxa with low abundances by obtaining genera that 
+    comprise at least 1 percent of the total reads:
+    """
+    input:
+        filter_taxa_input
+    output:
+        filter_taxa_total_output
+    shell:
+        '''
+        docker run \
+                -v {data_dir}:/data \
+                {quayurl} \
+                kaijuReport \
+                -v \
+                -t /data/{kaiju_dir}/{kaiju_dmp} \
+                -n /data/{kaiju_dir}/{kaiju_dmp2} \
+                -i /data/{filter_taxa_in_name_wc} \
+                -r genus \
+                -m 1 \
+                -o /data/{filter_taxa_total_output_name_wc}
+        '''
 
 
-rule filter_taxa:
+filter_taxa_class_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percentclassified.summary'
+filter_taxa_class_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona.1percentclassified.summary'
+filter_taxa_class_output = os.path.join(data_dir,filter_taxa_class_output_name)
 
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule filter_taxa_class:
+    """
+    For comparison, take the genera that comprise 
+    at least 1 percent of all of the classified reads
+    """
+    input:
+        filter_taxa_input
+    output:
+        filter_taxa_total_output
+    shell:
+        '''
+        docker run \
+                -v {data_dir}:/data \
+                {quayurl} \
+                kaijuReport \
+                -v \
+                -t /data/{kaiju_dir}/{kaiju_dmp} \
+                -n /data/{kaiju_dir}/{kaiju_dmp2} \
+                -i /data/{filter_taxa_in_name_wc} \
+                -r genus \
+                -m 1 \
+                -u \
+                -o /data/{filter_taxa_class_output_name_wc}
+        '''
+
+
+visualize_krona_input_name = '{base}.kaiju_out.trim{ntrim}.{suffix}.summary'
+visualize_krona_input_name_wc = '{wildcards.base}.kaiju_out.trim{wildcards.ntrim}.{suffix}.summary'
+visualize_krona_input = [os.path.join(kaiju_dir,f) for f in visualize_krona_input_name]
+
+visualize_krona_output_name = '{base}.kaiju_out.trim{ntrim}.{suffix}.html'
+visualize_krona_output_name_wc = '{wildcards.base}.kaiju_out.trim{wildcards.ntrim}.{suffix}.html'
+
+quayurl = config['krona']['quayurl'] + ":" + config['krona']['version']
+
+rule visualize_krona:
+    """
+    Visualize the results of the 
+    full and filtered taxonomic 
+    classifications using krona.
+    """
+    input:
+        visualize_krona_input
+    output:
+        visualize_krona_output
+    params:
+        suffixes = ['kaiju_out_krona'+x for x in ['','.1percenttotal','.1percentclassified']]
+    run:
+        for suffix in params.suffixes:
+            shell('''
+                docker run \
+                        -v {data_dir}:/data \
+                        {quayurl} \
+                        ktImportText \
+                        -o /data/{kaiju_dir}/{visualize_krona_output_name_wc} \
+                        /data/{kaijudir}/{visualize_krona_input_name_wc}
+                ''')
 
 
 rule cleanreally:
@@ -282,12 +416,5 @@ rule cleanreally:
 
 onsuccess:
     shell("rm -f .pulled_containers")
-
-
-
-
-
-
-
 
 
