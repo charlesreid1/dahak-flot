@@ -27,7 +27,7 @@ Create conda env:
 conda env create --name snakemake --file envs/basic.yml
 ```
 
-The file `environment.yml` should contain, at minimum:
+The yml file should contain, at minimum:
 
 ```
 channels:
