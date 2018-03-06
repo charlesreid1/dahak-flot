@@ -25,23 +25,13 @@ specify input/output files and any parameters for the
 commands. This makes it easy to change hard-coded 
 variables into config params from a .settings file.
 
-Dealing with directories and filenames is extremely awkward.
-We have several filenames to deal with - multiple input & output files - 
-and for each one, we have to assemble the filename itself,
-the local path to the file, the container path to the file,
-the absolute path to the file (for mounting directories in Docker),
-and often the output file names depend on the input file names.
+Dealing with directories, filenames, and wildcards is awkward but doable.
+(Snakemake wants relative paths, Docker wants absolute paths,
+ brackets aren't evaluated if they're in strings but they are if they're
+ hard-coded in the rules, etc.)
 
-Furthermore, we have the additional complication that 
-the tags {base} and {ntrim} in the input/output blocks 
-become {wildcards.base} and {wildcards.ntrim} in run/shell blocks.
-Snakemake does not go out of its way to ease any of this.
-
-To top it all off... {wildcards.base} will not be evaluated
-and replaced with the base wildcard if it is contained in a string
-passed to the run or shell block.
-
-Oh joy.
+Snakemake is designed for things to be hard-coded.
+If you don't follow the Snakemake model, life is difficult.
 """
 
 
@@ -94,17 +84,13 @@ rule pull_biocontainers:
 
 # NOTE:
 #
-# One of the biggest issues testing Snakefiles is that
+# Snakefiles are difficult to test because 
 # using wildcards to match rules makes it unclear what
 # files *are* available or not.
 # 
 # Example: we have a "databases" wild card, but this 
 # Snakefile contains no information about what values
 # for "databases" would actually be valid.
-#
-# This is (kinda) resolved with HTTP.remote, but that just
-# gives us the thumbs up or thumbs down from the value we pass,
-# it does not tell us what files are available.
 #
 # In some cases, we don't have a list of acceptable vaules.
 # But we ought to be able to distinguish between wildcards
