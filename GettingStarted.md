@@ -16,7 +16,7 @@ scripts in [dahak-yeti](https://github.com/charlesreid1/dahak-yeti)).
 Create conda env:
 
 ```
-conda env create --name snakemake --file environment.yml
+conda env create --name snakemake --file envs/basic.yml
 ```
 
 Activate conda env:
