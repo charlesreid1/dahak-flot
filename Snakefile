@@ -79,9 +79,27 @@ rule pull_biocontainers:
             ''')
 
 
+# NOTE:
+# One of the biggest issues testing Snakefiles is that
+# using wildcards to match rules makes it unclear what
+# files *are* available or not.
+# 
+# Example: we have a "databases" wild card, but this 
+# Snakefile contains no information about what values
+# for "databases" would actually be valid.
+#
+# This is (kinda) resolved with HTTP.remote, but that just
+# gives us the thumbs up or thumbs down from the value we pass,
+# it does not tell us what files are available.
+#
+# We ought to be able to distinguish between wildcards
+# the user *actually* wants to change, and wildcards
+# that can only take on a set number of values, which
+# the user won't know off the top of their head.
+
 sourmash_dir = os.path.join(data_dir,'sourmash')
-sourmash_sbt_outputs = os.path.join(sourmash_dir,'{database}-k{ksize}.sbt.json')
 sourmash_sbt_inputs = HTTP.remote(config['sourmash']['sbturl']+"/microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz")
+sourmash_sbt_outputs = os.path.join(sourmash_dir,'{database}-k{ksize}.sbt.json')
 
 rule download_sourmash_sbts:
     """
@@ -92,12 +110,13 @@ rule download_sourmash_sbts:
     output: 
         sourmash_sbt_outputs
     input: 
-        '.pulled_containers',
+        '.pulled_containers', 
         sourmash_sbt_inputs
-    shell: 
-        '''
-        tar xf {input} -C {sourmash_dir}
-        '''
+    run:
+        for sbtzip in input[1]:
+            shell('''
+            tar xf {input} -C {sourmash_dir}
+            ''')
 
 
 # Get trimmed data filename and OSF URL
@@ -428,7 +447,7 @@ rule cleanreally:
         '''
         '''
 
-
-onsuccess:
-    shell("rm -f .pulled_containers")
+### # NOTE: Add this back in once we're finished testing.
+###onsuccess:
+###    shell("rm -f .pulled_containers")
 
