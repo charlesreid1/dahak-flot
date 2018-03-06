@@ -9,6 +9,13 @@ Taxonomic Classification Snakefile
 This Snakefile defines tasks for the taxonomic
 classification workflow.
 
+
+Todo:
+    - Incorporate OSF CLI tool
+    - Move variables that won't change often into .settings files
+    - Move rules into individual rule files
+
+
 Notes: 
 
 We define a block of variables before each rule that 
@@ -34,8 +41,8 @@ Snakemake does not go out of its way to ease any of this.
 PWD = os.get_cwd()
 
 
-# Settings for this particular run
-include: '2018-03-01.settings'
+# User-specific settings 
+include: 'user.settings'
 
 # Settings common to all 
 # taxonomic classification workflows
@@ -44,7 +51,6 @@ include: 'taxclass.settings'
 
 # Rules:
 # ------------
-
 
 def getquayurls():
     return [config[k]['quayurl']+":"+config[k]['version'] for k in config.keys()]
@@ -416,5 +422,4 @@ rule cleanreally:
 
 onsuccess:
     shell("rm -f .pulled_containers")
-
 
