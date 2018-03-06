@@ -11,18 +11,20 @@ The steps below will cover how to install snakemake.
 and [install_snakemake.py](https://github.com/charlesreid1/dahak-yeti/blob/master/scripts/install_snakemake.py)
 scripts in [dahak-yeti](https://github.com/charlesreid1/dahak-yeti)).
 
+If you are using the preferred method of managing conda
+using pyenv, you should put the pyenv conda on your path
+before running any of the commands below:
+
+```
+eval "$(pyenv init -)"
+```
+
 ## Install Snakemake in Conda Environment
 
 Create conda env:
 
 ```
 conda env create --name snakemake --file envs/basic.yml
-```
-
-Activate conda env:
-
-```
-source activate snakemake
 ```
 
 The file `environment.yml` should contain, at minimum:
@@ -38,6 +40,12 @@ dependencies:
   - python=3.5.1
   - snakemake=3.11.0
   - pyyaml=3.11
+```
+
+Activate conda env:
+
+```
+source activate snakemake
 ```
 
 ## Running Snakemake Rules
