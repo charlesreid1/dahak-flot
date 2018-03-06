@@ -1,6 +1,7 @@
 import glob
 import os
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
+HTTP = HTTPRemoteProvider()
 
 
 """
@@ -52,8 +53,16 @@ include: 'taxclass.settings'
 # Rules:
 # ------------
 
-def getquayurls():
-    return [config[k]['quayurl']+":"+config[k]['version'] for k in config.keys()]
+
+data_dir = config['data_dir']
+
+
+quayurls = []
+for k in config.keys():
+    if(type(config[k])==type({})):
+        qurl = config[k]['quayurl']
+        qvers = config[k]['version']
+        quayurls.append(qurl + ":" + qvers)
 
 rule pull_biocontainers:
     """
@@ -63,11 +72,11 @@ rule pull_biocontainers:
     """
     output:
         touch('.pulled_containers')
-    params:
-        quayurls = getquayurls
     run:
-        for quayurl in params.quayurls:
-            subprocess.call(["docker","pull",quayurl])
+        for quayurl in quayurls:
+            shell('''
+            docker pull {quayurl}
+            ''')
 
 
 sourmash_dir = os.path.join(data_dir,'sourmash')
@@ -92,16 +101,15 @@ rule download_sourmash_sbts:
 
 
 # Get trimmed data filename and OSF URL
-# TODO:
-# This step should be replaced 
-# with OSF CLI
+# NOTE: this step should be replaced with OSF CLI
 trimmed_data_fnames = []
 trimmed_data_urls = []
 with open('trimmed_data.dat','r') as f:
     for ln in f.readlines():
         line = ln.split()
-        trimmed_data_fnames.append(line[0])
-        trimmed_data_urls.append(line[1])
+        if(len(line)>0):
+            trimmed_data_fnames.append(line[0])
+            trimmed_data_urls.append(line[1])
 
 rule download_trimmed_data:
     """
@@ -384,6 +392,7 @@ visualize_krona_input = [os.path.join(kaiju_dir,f) for f in visualize_krona_inpu
 
 visualize_krona_output_name = '{base}.kaiju_out.trim{ntrim}.{suffix}.html'
 visualize_krona_output_name_wc = '{wildcards.base}.kaiju_out.trim{wildcards.ntrim}.{suffix}.html'
+visualize_krona_output = os.path.join(data_dir,visualize_krona_output_name)
 
 quayurl = config['krona']['quayurl'] + ":" + config['krona']['version']
 
