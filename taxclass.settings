@@ -1,7 +1,9 @@
 from snakemake.utils import update_config
 
-# Questions:
-# - can you put wildcards like {database} or {ksize} into these strings?
+# Note: you can put wildcards into these strings, 
+#       and they will be interpreted by Snakemake in context,
+#       but keep in mind wildcards must be formatted 
+#       differently for input/output vs shell/run blocks.
 
 config_default = {
 
