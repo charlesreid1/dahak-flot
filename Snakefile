@@ -38,7 +38,7 @@ Snakemake does not go out of its way to ease any of this.
 
 
 # Need PWD for Docker
-PWD = os.get_cwd()
+PWD = os.getcwd()
 
 
 # User-specific settings 
