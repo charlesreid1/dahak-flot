@@ -30,6 +30,9 @@
 ## pretend calc sigs went ok
 #snakemake --cleanup-metadata data/trimmed/SRR606249.trim2.scaled10k.k21_31_51.sig data/trimmed/SRR606249_merged.trim2.fq.gz
 
+# unpack kaiju
+snakemake --printshellcmds data/kaijudb/{nodes.dmp,kaiju_db_nr_euk.fmi}
+
 ################################################
 #                 UNVERIFIED
 
@@ -38,4 +41,6 @@
 # Note: disorienting to jump into the pipeline in the middle. 
 # what was prior step? (no way to "read" Snakefile.)
 
+# run kaiju
 snakemake --printshellcmds data/kaijudb/{nodes.dmp,kaiju_db_nr_euk.fmi}
+
