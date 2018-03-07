@@ -236,44 +236,44 @@ rule calculate_signatures:
 
 
 
-### # -----------------8<-----------------------
-### 
-### 
-### 
-### kaiju_dirname = 'kaijudb'
-### kaiju_dir = os.path.join(data_dir,kaiju_dirname)
-### kaiju_dmp = 'nodes.dmp'
-### kaiju_dmp2 = 'names.dmp'
-### kaiju_fmi = 'kaiju_db_nr_euk.fmi'
-### kaiju_tar = 'kaiju_index_nr_euk.tgz'
-### kaiju_url = 'http://kaiju.binf.ku.dk/database'
-### 
-### kaiju_output_names = [kaiju_dmp, kaiju_fmi]
-### unpack_kaiju_output = [os.path.join(kaiju_dir,f) for f in kaiju_output_names]
-### unpack_kaiju_input = HTTP.remote(kaiju_url)
-### 
-### rule unpack_kaiju:
-###     """
-###     Download and unpack the kaiju database.
-###     The ( ) notation in the shell creates a temporary scope.
-###     """
-###     output:
-###         unpack_kaiju_output
-###     shell:
-###         '''
-###         mkdir -p {kaiju_dir} 
-###         (
-###         cd {kaiju_dir}
-###         curl -LO "{kaiju_url}/{kaiju_tar}"
-###         tar xzf {kaiju_tar}
-###         rm -f {kaiju_tar}
-###         )
-###         '''
-### 
-### 
-### # -----------------8<-----------------------
-### 
-### 
+# -----------------8<-----------------------
+
+
+
+kaiju_dirname = 'kaijudb'
+kaiju_dir = os.path.join(data_dir,kaiju_dirname)
+kaiju_dmp = 'nodes.dmp'
+kaiju_dmp2 = 'names.dmp'
+kaiju_fmi = 'kaiju_db_nr_euk.fmi'
+kaiju_tar = 'kaiju_index_nr_euk.tgz'
+kaiju_url = 'http://kaiju.binf.ku.dk/database'
+
+kaiju_output_names = [kaiju_dmp, kaiju_fmi]
+unpack_kaiju_output = [os.path.join(kaiju_dir,f) for f in kaiju_output_names]
+unpack_kaiju_input = HTTP.remote(kaiju_url)
+
+rule unpack_kaiju:
+    """
+    Download and unpack the kaiju database.
+    The ( ) notation in the shell creates a temporary scope.
+    """
+    output:
+        unpack_kaiju_output
+    shell:
+        '''
+        mkdir -p {kaiju_dir} 
+        (
+        cd {kaiju_dir}
+        curl -LO "{kaiju_url}/{kaiju_tar}"
+        tar xzf {kaiju_tar}
+        rm -f {kaiju_tar}
+        )
+        '''
+
+
+# -----------------8<-----------------------
+
+
 ### kaiju_input_names = [kaiju_dmp, kaiju_fmi]
 ### run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
 ### run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
