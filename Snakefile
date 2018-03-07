@@ -274,44 +274,44 @@ rule unpack_kaiju:
 # -----------------8<-----------------------
 
 
-### kaiju_input_names = [kaiju_dmp, kaiju_fmi]
-### run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
-### run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
-### 
-### kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
-### kaiju_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out'
-### run_kaiju_output = os.path.join(data_dir,kaiju_output_name)
-### 
-### quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
-### 
-### rule run_kaiju:
-###     """
-###     Run kaiju
-###     """
-###     input:
-###         run_kaiju_input
-###     output:
-###         run_kaiju_output
-###     shell:
-###         '''
-###         docker run \
-###                 -v {PWD}/{data_dir}:/data \
-###                 {quayurl} \
-###                 kaiju \
-###                 -x \
-###                 -v \
-###                 -t /data/{kaiju_dir}/{kaiju_dmp} \
-###                 -f /data/{kaiju_dir}/{kaiju_fmi} \
-###                 -i /data/{fq_fwd_wc} \
-###                 -j /data/{fq_rev_wc} \
-###                 -o /data/{kaiju_output_name_wc} \
-###                 -z 4
-###         '''
-### 
-### 
-### # -----------------8<-----------------------
-### 
-### 
+kaiju_input_names = [kaiju_dmp, kaiju_fmi]
+run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
+run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
+
+kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
+kaiju_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out'
+run_kaiju_output = os.path.join(data_dir,kaiju_output_name)
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule run_kaiju:
+    """
+    Run kaiju
+    """
+    input:
+        run_kaiju_input
+    output:
+        run_kaiju_output
+    shell:
+        '''
+        docker run \
+                -v {PWD}/{data_dir}:/data \
+                {quayurl} \
+                kaiju \
+                -x \
+                -v \
+                -t /data/{kaiju_dir}/{kaiju_dmp} \
+                -f /data/{kaiju_dir}/{kaiju_fmi} \
+                -i /data/{fq_fwd_wc} \
+                -j /data/{fq_rev_wc} \
+                -o /data/{kaiju_output_name_wc} \
+                -z 4
+        '''
+
+
+# -----------------8<-----------------------
+
+
 ### kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
 ### kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
 ### 
