@@ -1,6 +1,6 @@
 # How This Repo Is Organized
 
-The dahak-flot repo contains Snakemake workflows, but it also contains scripting for infrastructure to support Snakemake workflows. For example, setting up a cloud network, allocating a monitoring node, submitting to an HPC batch queue system.
+The dahak-flot repo contains Snakemake workflows *and* scripting for cloud infrastructure (computing and networking). 
 
 ## Directory Structure
 
