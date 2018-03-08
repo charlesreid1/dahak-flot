@@ -248,7 +248,7 @@ kaiju_fmi = 'kaiju_db_nr_euk.fmi'
 kaiju_tar = 'kaiju_index_nr_euk.tgz'
 kaiju_url = 'http://kaiju.binf.ku.dk/database'
 
-kaiju_output_names = [kaiju_dmp, kaiju_fmi]
+kaiju_output_names = [kaiju_dmp, kaiju_dmp2, kaiju_fmi]
 unpack_kaiju_output = [os.path.join(kaiju_dir,f) for f in kaiju_output_names]
 unpack_kaiju_input = HTTP.remote(kaiju_url)
 
@@ -279,7 +279,6 @@ run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
 run_kaiju_input += [os.path.join(trimmed_dir,f) for f in fq_names]
 
 kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
-kaiju_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out'
 run_kaiju_output = os.path.join(kaiju_dir,kaiju_output_name)
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
@@ -295,7 +294,7 @@ rule run_kaiju:
     run:
         fq_fwd_wc = fq_fwd.format(**wildcards)
         fq_rev_wc = fq_rev.format(**wildcards)
-        kaiju_output_name_wc.format(**wildcards)
+        kaiju_output_name_wc = kaiju_output_name.format(**wildcards)
         shell('''
             docker run \
                     -v {PWD}/{data_dir}:/data \
@@ -315,14 +314,15 @@ rule run_kaiju:
 # -----------------8<-----------------------
 
 
+krona_dir = os.path.join(data_dir,'krona')
+subprocess.call(["mkdir","-p",krona_dir], cwd=PWD)
+
 kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
 kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
 
-kaiju2krona_in_name_wc = kaiju_output_name_wc # only the -i in file
-
 kaiju2krona_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
 kaiju2krona_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona'
-kaiju2krona_output = os.path.join(data_dir,kaiju2krona_output_name)
+kaiju2krona_output = os.path.join(krona_dir,kaiju2krona_output_name)
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -335,18 +335,20 @@ rule kaiju2krona:
         kaiju2krona_input
     output:
         kaiju2krona_output
-    shell:
-        '''
-        docker run \
-                -v {PWD}/{kaiju_dir}:/data \
-                {quayurl} \
-                kaiju2krona \
-                -v \
-                -t /data/{kaiju_dmp} \
-                -n /data/{kaiju_dmp2} \
-                -i /data/{kaiju2krona_in_name_wc} \
-                -o /data/{kaiju2krona_output_name_wc}
-        '''
+    run:
+        kaiju2krona_in_name_wc = kaiju_output_name.format(**wildcards)
+        kaiju2krona_output_name_wc = kaiju2krona_output_name.format(**wildcards)
+        shell('''
+            docker run \
+                    -v {PWD}/{data_dir}:/data \
+                    {quayurl} \
+                    kaiju2krona \
+                    -v \
+                    -t /{kaiju_dir}/{kaiju_dmp} \
+                    -n /{kaiju_dir}/{kaiju_dmp2} \
+                    -i /{kaiju_dir}/{kaiju2krona_in_name_wc} \
+                    -o /{krona_dir}/{kaiju2krona_output_name_wc}
+        ''')
 
 
 # -----------------8<-----------------------
