@@ -28,6 +28,13 @@ As rules get more complex:
 * Subtasks aggregate multiple rules together (to generate output file for specified subtask)
 * Master task aggregates subtasks together
 
+## Complications
+
+We ran into some complications implementing the above designs.
+
+All of the data goes in the current directory, not `data/`, 
+because Snakemake matches directories in its wildcards.
+
 ## Attribution
 
 Hat tip to [@luiziber](https://github.com/luizirber) on the directory structure.
