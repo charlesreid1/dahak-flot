@@ -276,11 +276,11 @@ rule unpack_kaiju:
 
 kaiju_input_names = [kaiju_dmp, kaiju_fmi]
 run_kaiju_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
-run_kaiju_input += [os.path.join(data_dir,f) for f in fq_names]
+run_kaiju_input += [os.path.join(trimmed_dir,f) for f in fq_names]
 
 kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
 kaiju_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.out'
-run_kaiju_output = os.path.join(data_dir,kaiju_output_name)
+run_kaiju_output = os.path.join(kaiju_dir,kaiju_output_name)
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -292,63 +292,66 @@ rule run_kaiju:
         run_kaiju_input
     output:
         run_kaiju_output
+    run:
+        fq_fwd_wc = fq_fwd.format(**wildcards)
+        fq_rev_wc = fq_rev.format(**wildcards)
+        kaiju_output_name_wc.format(**wildcards)
+        shell('''
+            docker run \
+                    -v {PWD}/{data_dir}:/data \
+                    {quayurl} \
+                    kaiju \
+                    -x \
+                    -v \
+                    -t /{kaiju_dir}/{kaiju_dmp} \
+                    -f /{kaiju_dir}/{kaiju_fmi} \
+                    -i /{trimmed_dir}/{fq_fwd_wc} \
+                    -j /{trimmed_dir}/{fq_rev_wc} \
+                    -o /{kaiju_dir}/{kaiju_output_name_wc} \
+                    -z 4
+        ''')
+
+
+# -----------------8<-----------------------
+
+
+kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
+
+kaiju2krona_in_name_wc = kaiju_output_name_wc # only the -i in file
+
+kaiju2krona_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
+kaiju2krona_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona'
+kaiju2krona_output = os.path.join(data_dir,kaiju2krona_output_name)
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule kaiju2krona:
+    """
+    Convert kaiju results to krona results,
+    and generate a report.
+    """
+    input:
+        kaiju2krona_input
+    output:
+        kaiju2krona_output
     shell:
         '''
         docker run \
-                -v {PWD}/{data_dir}:/data \
+                -v {PWD}/{kaiju_dir}:/data \
                 {quayurl} \
-                kaiju \
-                -x \
+                kaiju2krona \
                 -v \
-                -t /data/{kaiju_dir}/{kaiju_dmp} \
-                -f /data/{kaiju_dir}/{kaiju_fmi} \
-                -i /data/{fq_fwd_wc} \
-                -j /data/{fq_rev_wc} \
-                -o /data/{kaiju_output_name_wc} \
-                -z 4
+                -t /data/{kaiju_dmp} \
+                -n /data/{kaiju_dmp2} \
+                -i /data/{kaiju2krona_in_name_wc} \
+                -o /data/{kaiju2krona_output_name_wc}
         '''
 
 
 # -----------------8<-----------------------
 
 
-### kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
-### kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
-### 
-### kaiju2krona_in_name_wc = kaiju_output_name_wc # just the -i in file
-### 
-### kaiju2krona_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
-### kaiju2krona_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona'
-### kaiju2krona_output = os.path.join(data_dir,kaiju2krona_output_name)
-### 
-### quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
-### 
-### rule kaiju2krona:
-###     """
-###     Convert kaiju results to krona results,
-###     and generate a report.
-###     """
-###     input:
-###         kaiju2krona_input
-###     output:
-###         kaiju2krona_output
-###     shell:
-###         '''
-###         docker run \
-###                 -v {data_dir}:/data \
-###                 {quayurl} \
-###                 kaiju2krona \
-###                 -v \
-###                 -t /data/{kaiju_dir}/{kaiju_dmp} \
-###                 -n /data/{kaiju_dir}/{kaiju_dmp2} \
-###                 -i /data/{kaiju2krona_in_name_wc} \
-###                 -o /data/{kaiju2krona_output_name_wc}
-###         '''
-### 
-### 
-### # -----------------8<-----------------------
-### 
-### 
 ### kaiju2kronasummary_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
 ### kaiju2kronasummary_input = [os.path.join(kaiju_dir,f) for f in kaiju2kronasummary_input_names]
 ### 
