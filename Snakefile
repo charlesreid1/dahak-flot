@@ -287,8 +287,8 @@ rule run_kaiju:
     """
     Run kaiju
     """
-    input:
-        run_kaiju_input
+    #input:
+    #    run_kaiju_input
     output:
         run_kaiju_output
     run:
@@ -317,11 +317,10 @@ rule run_kaiju:
 krona_dir = os.path.join(data_dir,'krona')
 subprocess.call(["mkdir","-p",krona_dir], cwd=PWD)
 
-kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
-kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju_input_names]
+kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, kaiju_output_name]
+kaiju2krona_input = [os.path.join(kaiju_dir,f) for f in kaiju2krona_input_names]
 
 kaiju2krona_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
-kaiju2krona_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona'
 kaiju2krona_output = os.path.join(krona_dir,kaiju2krona_output_name)
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
@@ -354,44 +353,43 @@ rule kaiju2krona:
 # -----------------8<-----------------------
 
 
-### kaiju2kronasummary_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
-### kaiju2kronasummary_input = [os.path.join(kaiju_dir,f) for f in kaiju2kronasummary_input_names]
-### 
-### kaiju2kronasummary_in_name_wc = kaiju_output_name_wc # just the -i in file
-### 
-### kaiju2kronasummary_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.summary'
-### kaiju2kronasummary_output_name_wc = '{wildcards.base}.kaiju_output.trim{wildcards.ntrim}.kaiju_out_krona.summary'
-### kaiju2kronasummary_output = os.path.join(data_dir,kaiju2kronasummary_output_name)
-### 
-### quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
-### 
-### rule kaiju2kronasummary:
-###     """
-###     Convert kaiju results to krona results,
-###     and generate a report.
-###     """
-###     input:
-###         kaiju2kronasummary_input
-###     output:
-###         kaiju2kronasummary_output
-###     shell:
-###         '''
-###         docker run \
-###                 -v {data_dir}:/data \
-###                 {quayurl} \
-###                 kaijuReport \
-###                 -v \
-###                 -t /data/{kaiju_dir}/{kaiju_dmp} \
-###                 -n /data/{kaiju_dir}/{kaiju_dmp2} \
-###                 -i /data/{kaiju2kronasummary_in_name_wc} \
-###                 -r genus \
-###                 -o /data/{kaiju2kronasummary_output_name_wc}
-###         '''
-### 
-### 
-### # -----------------8<-----------------------
-### 
-### 
+kaiju2kronasummary_input_names = [kaiju_dmp, kaiju_dmp2, kaiju_output_name]
+kaiju2kronasummary_input = [os.path.join(kaiju_dir,f) for f in kaiju2kronasummary_input_names]
+
+kaiju2kronasummary_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.summary'
+kaiju2kronasummary_output = os.path.join(krona_dir,kaiju2kronasummary_output_name)
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule kaiju2kronasummary:
+    """
+    Convert kaiju results to krona results,
+    and generate a report.
+    """
+    input:
+        kaiju2kronasummary_input
+    output:
+        kaiju2kronasummary_output
+    run:
+        kaiju2kronasummary_in_name_wc = kaiju_output_name.format(**wildcards)
+        kaiju2kronasummary_output_name_wc = kaiju2kronasummary_output_name.format(**wildcards)
+        shell('''
+            docker run \
+                    -v {PWD}/{data_dir}:/data \
+                    {quayurl} \
+                    kaijuReport \
+                    -v \
+                    -t /{kaiju_dir}/{kaiju_dmp} \
+                    -n /{kaiju_dir}/{kaiju_dmp2} \
+                    -i /{kaiju_dir}/{kaiju2kronasummary_in_name_wc} \
+                    -r genus \
+                    -o /{kaiju_dir}/{kaiju2kronasummary_output_name_wc}
+        ''')
+
+
+# -----------------8<-----------------------
+
+
 ### filter_taxa_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
 ### filter_taxa_input = [os.path.join(kaiju_dir,f) for f in filter_taxa_input_names]
 ### 
