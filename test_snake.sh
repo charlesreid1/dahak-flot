@@ -36,6 +36,12 @@
 ## pretend unpack kaiju went ok
 #snakemake --cleanup-metadata data/kaijudb/{nodes.dmp,kaiju_db_nr_euk.fmi}
 
+## run kaiju
+#snakemake --printshellcmds data/kaijudb/SRR606249.kaiju_output.trim2.out
+
+## pretend run kaiju went ok
+#snakemake --cleanup-metadata data/kaijudb/SRR606249.kaiju_output.trim2.out
+
 ################################################
 #                 UNVERIFIED
 
@@ -44,6 +50,8 @@
 # Note: disorienting to jump into the pipeline in the middle. 
 # what was prior step? (no way to "read" Snakefile.)
 
-# run kaiju
-snakemake --printshellcmds data/kaijudb/SRR606249.kaiju_output.trim2.out
+# kaiju 2 krona
+snakemake -p data/krona/SRR606249.kaiju_output.trim2.kaiju_out_krona
+
+
 
