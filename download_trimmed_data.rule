@@ -1,0 +1,26 @@
+# Get trimmed data filename and OSF URL
+# NOTE: this step should be replaced with OSF CLI
+trimmed_data_files = []
+trimmed_data_urls = []
+with open('inputs/trimmed_data.dat','r') as f:
+    for ln in f.readlines():
+        line = ln.split()
+        if(len(line)>0):
+            trimmed_data_files.append(line[0])
+            trimmed_data_urls.append(line[1])
+
+rule download_trimmed_data:
+    """
+    Download the trimmed data from OSF
+
+    To call this rule, request the files listed in trimmed_data.dat
+    """
+    output:
+        trimmed_data_files, touch('.trimmed')
+    run:
+        for (osf_file,osf_url) in zip(trimmed_data_files,trimmed_data_urls):
+            if(not os.path.isfile(osf_file)):
+                shell('''
+                    wget -O {osf_file} {osf_url}
+                ''')
+

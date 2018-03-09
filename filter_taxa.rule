@@ -1,0 +1,67 @@
+filter_taxa_total_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+filter_taxa_total_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percenttotal.summary'
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule filter_taxa_total:
+    """
+    Filter out taxa with low abundances by obtaining genera that 
+    comprise at least 1 percent of the total reads:
+    """
+    input:
+        filter_taxa_total_input
+    output:
+        filter_taxa_total_output
+    run:
+        filter_taxa_total_in_wc = run_kaiju_output.format(**wildcards)
+        filter_taxa_total_output_wc = filter_taxa_total_output.format(**wildcards)
+        shell('''
+            docker run \
+                -v {PWD}:/data \
+                {quayurl} \
+                kaijuReport \
+                -v \
+                -t /data/{kaiju_dmp} \
+                -n /data/{kaiju_dmp2} \
+                -i /data/{filter_taxa_in_wc} \
+                -r genus \
+                -m 1 \
+                -o /data/{filter_taxa_total_output_wc}
+        ''')
+
+
+
+
+
+filter_taxa_class_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+filter_taxa_class_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percentclassified.summary'
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule filter_taxa_class:
+    """
+    For comparison, take the genera that comprise 
+    at least 1 percent of all of the classified reads
+    """
+    input:
+        filter_taxa_class_input
+    output:
+        filter_taxa_class_output
+    run:
+        filter_taxa_class_in_wc = run_kaiju_output.format(**wildcards)
+        filter_taxa_class_output_wc = filter_taxa_class_output_name.format(**wildcards)
+        shell('''
+                docker run \
+                        -v {PWD}:/data \
+                        {quayurl} \
+                        kaijuReport \
+                        -v \
+                        -t /data/{kaiju_dmp} \
+                        -n /data/{kaiju_dmp2} \
+                        -i /data/{filter_taxa_class_in_wc} \
+                        -r genus \
+                        -m 1 \
+                        -u \
+                        -o /data/{filter_taxa_class_output_wc}
+        ''')
+
