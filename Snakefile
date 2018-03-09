@@ -107,11 +107,9 @@ rule pull_biocontainers:
 #data_dir = os.path.join(data_dir,'sourmash')
 #subprocess.call(["mkdir","-p",data_dir], cwd=PWD)
 
-download_sourmash_sbt_tar_name = "microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz"
-
-download_sourmash_sbt_input = HTTP.remote(config['sourmash']['sbturl']+"/" + download_sourmash_sbt_tar_name)
-
-download_sourmash_sbt_output = download_sourmash_sbt_tar_name
+sourmash_sbt_tar = "microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz"
+download_sourmash_sbt_input = HTTP.remote(config['sourmash']['sbturl']+"/" + sourmash_sbt_tar)
+download_sourmash_sbt_output = download_sourmash_sbt_tar
 
 rule download_sourmash_sbts:
     """
@@ -130,12 +128,7 @@ rule download_sourmash_sbts:
         '''
 
 
-unpack_sourmash_sbt_tar_name = download_sourmash_sbt_tar_name
-
-unpack_sourmash_sbt_tar_name = "microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz"
-unpack_sourmash_sbt_tar = unpack_sourmash_sbt_tar_name
-
-unpack_sourmash_sbt_input = unpack_sourmash_sbt_tar_name
+unpack_sourmash_sbt_input = sourmash_sbt_tar
 unpack_sourmash_sbt_output = '{database}-k{ksize}.sbt.json'
 
 rule unpack_sourmash_sbts:
@@ -146,10 +139,8 @@ rule unpack_sourmash_sbts:
         unpack_sourmash_sbt_input
     output:
         unpack_sourmash_sbt_output
-    params:
-        stupid = '10'
     run:
-        unpack_sourmash_sbt_tar_wc = unpack_sourmash_sbt_tar.format(**wildcards)
+        unpack_sourmash_sbt_tar_wc = unpack_sourmash_sbt_input.format(**wildcards)
         shell('''
             tar xzf {unpack_sourmash_sbt_tar_wc} && rm -f {unpack_sourmash_sbt_tar_wc}
         ''')
@@ -160,16 +151,14 @@ rule unpack_sourmash_sbts:
 
 # Get trimmed data filename and OSF URL
 # NOTE: this step should be replaced with OSF CLI
-trimmed_data_fnames = []
+trimmed_data_files = []
 trimmed_data_urls = []
 with open('inputs/trimmed_data.dat','r') as f:
     for ln in f.readlines():
         line = ln.split()
         if(len(line)>0):
-            trimmed_data_fnames.append(line[0])
+            trimmed_data_files.append(line[0])
             trimmed_data_urls.append(line[1])
-
-trimmed_data_files = trimmed_data_fnames
 
 rule download_trimmed_data:
     """
@@ -192,12 +181,10 @@ rule download_trimmed_data:
 
 fq_fwd = '{base}_1.trim{ntrim}.fq.gz' 
 fq_rev = '{base}_2.trim{ntrim}.fq.gz'
-
-fq_names = [fq_fwd, fq_rev]
 sig_name =  '{base}.trim{ntrim}.scaled10k.k21_31_51.sig'
-
 merge_file = "{base}_merged.trim{ntrim}.fq.gz"
 
+fq_names = [fq_fwd, fq_rev]
 sig_inputs = fq_names
 sig_output = sig_name
 merge_output = merge_file
@@ -243,8 +230,7 @@ kaiju_fmi = 'kaiju_db_nr_euk.fmi'
 kaiju_tar = 'kaiju_index_nr_euk.tgz'
 kaiju_url = 'http://kaiju.binf.ku.dk/database'
 
-kaiju_output_names = [kaiju_dmp, kaiju_dmp2, kaiju_fmi]
-unpack_kaiju_output = kaiju_output_names
+kaiju_output = [kaiju_dmp, kaiju_dmp2, kaiju_fmi]
 unpack_kaiju_input = HTTP.remote(kaiju_url)
 
 rule unpack_kaiju:
@@ -265,12 +251,9 @@ rule unpack_kaiju:
 # -----------------8<-----------------------
 
 
-kaiju_input_names = [kaiju_dmp, kaiju_fmi]
-run_kaiju_input = kaiju_input_names
+run_kaiju_input = [kaiju_dmp, kaiju_fmi]
 run_kaiju_input += fq_names
-
-kaiju_output_name = '{base}.kaiju_output.trim{ntrim}.out'
-run_kaiju_output = kaiju_output_name
+run_kaiju_output = '{base}.kaiju_output.trim{ntrim}.out'
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -285,7 +268,7 @@ rule run_kaiju:
     run:
         fq_fwd_wc = fq_fwd.format(**wildcards)
         fq_rev_wc = fq_rev.format(**wildcards)
-        kaiju_output_name_wc = kaiju_output_name.format(**wildcards)
+        run_kaiju_output_wc = run_kaiju_output.format(**wildcards)
         shell('''
             docker run \
                     -v {PWD}:/data \
@@ -297,7 +280,7 @@ rule run_kaiju:
                     -f /data/{kaiju_fmi} \
                     -i /data/{fq_fwd_wc} \
                     -j /data/{fq_rev_wc} \
-                    -o /data/{kaiju_output_name_wc} \
+                    -o /data/{run_kaiju_output_wc} \
                     -z 4
         ''')
 
@@ -305,11 +288,8 @@ rule run_kaiju:
 # -----------------8<-----------------------
 
 
-kaiju2krona_input_names = [kaiju_dmp, kaiju_dmp2, kaiju_output_name]
-kaiju2krona_input = kaiju2krona_input_names
-
-kaiju2krona_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
-kaiju2krona_output = kaiju2krona_output_name
+kaiju2krona_input = [kaiju_dmp, kaiju_dmp2, kaiju_output_name]
+kaiju2krona_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona'
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -323,8 +303,8 @@ rule kaiju2krona:
     output:
         kaiju2krona_output
     run:
-        kaiju2krona_in_name_wc = kaiju_output_name.format(**wildcards)
-        kaiju2krona_output_name_wc = kaiju2krona_output_name.format(**wildcards)
+        kaiju2krona_in_name_wc = run_kaiju_output.format(**wildcards)
+        kaiju2krona_output_name_wc = kaiju2krona_output.format(**wildcards)
         shell('''
             docker run \
                     -u `stat -c "%u:%g" {PWD}` \
@@ -342,11 +322,8 @@ rule kaiju2krona:
 # -----------------8<-----------------------
 
 
-kaiju2kronasummary_input_names = [kaiju_dmp, kaiju_dmp2, kaiju_output_name]
-kaiju2kronasummary_input = kaiju2kronasummary_input_names
-
-kaiju2kronasummary_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.summary'
-kaiju2kronasummary_output = kaiju2kronasummary_output_name
+kaiju2kronasummary_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+kaiju2kronasummary_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.summary'
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -360,8 +337,8 @@ rule kaiju2kronasummary:
     output:
         kaiju2kronasummary_output
     run:
-        kaiju2kronasummary_in_name_wc = kaiju_output_name.format(**wildcards)
-        kaiju2kronasummary_output_name_wc = kaiju2kronasummary_output_name.format(**wildcards)
+        kaiju2kronasummary_in_wc = run_kaiju_output.format(**wildcards)
+        kaiju2kronasummary_output_wc = kaiju2kronasummary_output.format(**wildcards)
         shell('''
             docker run \
                     -u `stat -c "%u:%g" {PWD}` \
@@ -371,20 +348,17 @@ rule kaiju2kronasummary:
                     -v \
                     -t /data/{kaiju_dmp} \
                     -n /data/{kaiju_dmp2} \
-                    -i /data/{kaiju2kronasummary_in_name_wc} \
+                    -i /data/{kaiju2kronasummary_in_wc} \
                     -r genus \
-                    -o /data/{kaiju2kronasummary_output_name_wc}
+                    -o /data/{kaiju2kronasummary_output_wc}
         ''')
 
 
 # -----------------8<-----------------------
 
 
-filter_taxa_total_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
-filter_taxa_total_input = filter_taxa_total_input_names
-
-filter_taxa_total_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percenttotal.summary'
-filter_taxa_total_output = filter_taxa_total_output_name
+filter_taxa_total_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+filter_taxa_total_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percenttotal.summary'
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -398,8 +372,8 @@ rule filter_taxa_total:
     output:
         filter_taxa_total_output
     run:
-        filter_taxa_total_in_name_wc = kaiju_output_name.format(**wildcards)
-        filter_taxa_total_output_name_wc = filter_taxa_total_output_name.format(**wildcards)
+        filter_taxa_total_in_wc = run_kaiju_output.format(**wildcards)
+        filter_taxa_total_output_wc = filter_taxa_total_output.format(**wildcards)
         shell('''
             docker run \
                 -v {PWD}:/data \
@@ -408,21 +382,18 @@ rule filter_taxa_total:
                 -v \
                 -t /data/{kaiju_dmp} \
                 -n /data/{kaiju_dmp2} \
-                -i /data/{filter_taxa_in_name_wc} \
+                -i /data/{filter_taxa_in_wc} \
                 -r genus \
                 -m 1 \
-                -o /data/{filter_taxa_total_output_name_wc}
+                -o /data/{filter_taxa_total_output_wc}
         ''')
 
 
 # -----------------8<-----------------------
 
 
-filter_taxa_class_input_names = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
-filter_taxa_class_input = filter_taxa_class_input_names
-
-filter_taxa_class_output_name = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percentclassified.summary'
-filter_taxa_class_output = filter_taxa_class_output_name
+filter_taxa_class_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
+filter_taxa_class_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percentclassified.summary'
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
@@ -436,7 +407,8 @@ rule filter_taxa_class:
     output:
         filter_taxa_class_output
     run:
-        filter_taxa_class_output_name_wc = filter_taxa_class_output_name.format(**wildcards)
+        filter_taxa_class_in_wc = run_kaiju_output.format(**wildcards)
+        filter_taxa_class_output_wc = filter_taxa_class_output_name.format(**wildcards)
         shell('''
                 docker run \
                         -v {data_dir}:/data \
@@ -445,22 +417,19 @@ rule filter_taxa_class:
                         -v \
                         -t /data/{kaiju_dmp} \
                         -n /data/{kaiju_dmp2} \
-                        -i /data/{filter_taxa_in_name_wc} \
+                        -i /data/{filter_taxa_class_in_wc} \
                         -r genus \
                         -m 1 \
                         -u \
-                        -o /data/{filter_taxa_class_output_name_wc}
+                        -o /data/{filter_taxa_class_output_wc}
         ''')
 
 
 # -----------------8<-----------------------
 
 
-visualize_krona_input_name = '{base}.kaiju_output.trim{ntrim}.{suffix}.summary'
-visualize_krona_input = visualize_krona_input_name
-
-visualize_krona_output_name = '{base}.kaiju_output.trim{ntrim}.{suffix}.html'
-visualize_krona_output = visualize_krona_output_name
+visualize_krona_input = '{base}.kaiju_output.trim{ntrim}.{suffix}.summary'
+visualize_krona_output = '{base}.kaiju_output.trim{ntrim}.{suffix}.html'
 
 quayurl = config['krona']['quayurl'] + ":" + config['krona']['version']
 
@@ -475,15 +444,15 @@ rule visualize_krona:
     output:
         visualize_krona_output
     run:
-        visualize_krona_output_name_wc = visualize_krona_output_name.format(**wildcards)
-        visualize_krona_input_name_wc = visualize_krona_input_name.format(**wildcards)
+        visualize_krona_output_wc = visualize_krona_output.format(**wildcards)
+        visualize_krona_input_wc = visualize_krona_input.format(**wildcards)
         shell('''
             docker run \
                     -v {PWD}:/data \
                     {quayurl} \
                     ktImportText \
-                    -o /data/{visualize_krona_output_name_wc} \
-                    /data/{visualize_krona_input_name_wc}
+                    -o /data/{visualize_krona_output_wc} \
+                    /data/{visualize_krona_input_wc}
         ''')
 
 
