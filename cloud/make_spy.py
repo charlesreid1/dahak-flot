@@ -19,12 +19,9 @@ def main():
     ec2 = s.resource('ec2') # high level interface
     ec2c = s.client('ec2') # low level interface
 
-    # Get the latest .file
-    vpc_params_file = sorted(glob.glob("*.file"))[-1]
-    print("Working on vpc params file %s..."%(vpc_params_file))
 
     ###################################
-    # Confirm
+    # Confirm Network Interface
 
     print("About to create network interface.")
     ui = input("Okay to proceed? (y/n): ")
@@ -32,12 +29,17 @@ def main():
         print("Script will not proceed.")
         exit()
 
+
     ###################################
     # Network Interface:
 
-    user_data_file = "user_data.sh"
+    # Get the latest .file
+    vpc_params_file = sorted(glob.glob("*.file"))[-1]
 
     network_json = make_network_json(vpc_params_file)
+
+    print("Creating VPC %s_vpc"%(label))
+    print("    Using VPC params in file %s..."%(vpc_params_file))
 
     try:
         net = ec2c.create_network_interface(**network_json)
@@ -45,9 +47,19 @@ def main():
         raise
  
     network_interface_id = net['NetworkInterface']['NetworkInterfaceId']
-    print("To delete this network interface:")
+
+    print("    Success!")
+    print("   VPC: %s (%s)"%(vpc_params['vpc_id'], vpc_params['vpc_label']))
+    print("   Network Interface: %s"%(network_interface_id)
+    print("   To delete this network interface:")
+    print("")
     print("aws ec2 delete-network-interface --network-interface-id %s"%(network_interface_id))
     print("")
+    print("")
+
+
+    ###################################
+    # Confirm Micro
 
     print("About to request spy node.")
     ui = input("Okay to proceed? (y/n): ")
@@ -55,7 +67,19 @@ def main():
         print("Script will not proceed.")
         exit()
 
+
+    ###################################
+    # AWS Micro Node
+
+    # Load the contents of this script 
+    # (MUST be a bash script)
+    # into the machine and run on boot.
+    user_data_file = "user_data.sh"
+
     spy_json = make_spy_json(vpc_params_file, user_data_file, network_interface_id)
+
+    print("Creating micro node")
+    print("    Using user data file %s..."%(user_data_file))
 
     try:
         spy = ec2.create_instances(**spy_json)
@@ -63,12 +87,15 @@ def main():
         raise
 
     fname = datetime.now().strftime("spy_%Y-%m-%d_at_%H-%M-%S.file")
-    print(net['NetworkInterface'].keys())
     with open(fname,'w') as f:
         print("network_interface_id: %s"%(net['NetworkInterface']['NetworkInterfaceId']), file=f)
         print("private_ip: %s"%(net['NetworkInterface']['PrivateIpAddress']),             file=f)
-        #print("private_ip: %s"%(net['NetworkInterface']['PublipAddress']),                file=f)
         print("vpc_id: %s"%(net['NetworkInterface']['VpcId']),                            file=f)
+
+    ## Include these lines next time this script is run,
+    ## there is a lot of useful info we should include from spy{}
+    #import pdb; pdb.set_trace()
+    #print(spy.keys())
 
 
 def make_network_json(vpc_params_file):

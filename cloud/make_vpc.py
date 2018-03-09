@@ -33,7 +33,7 @@ def main():
 
 
     ###################################
-    # Randomness
+    # Random Labels
 
     base_ip = random_ip()
     label = random_label()
