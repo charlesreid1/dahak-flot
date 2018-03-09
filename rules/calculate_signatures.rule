@@ -1,0 +1,39 @@
+fq_fwd = '{base}_1.trim{ntrim}.fq.gz' 
+fq_rev = '{base}_2.trim{ntrim}.fq.gz'
+sig_name =  '{base}.trim{ntrim}.scaled10k.k21_31_51.sig'
+merge_file = "{base}_merged.trim{ntrim}.fq.gz"
+
+fq_names = [fq_fwd, fq_rev]
+sig_inputs = fq_names
+sig_output = sig_name
+merge_output = merge_file
+
+quayurl = config['sourmash']['quayurl']+":"+config['sourmash']['version']
+
+rule calculate_signatures:
+    """
+    Calculate signatures from trimmed data using sourmash
+    """
+    input:
+        sig_inputs
+    output:
+        sig_output, merge_output
+    run:
+        fq_fwd_wc = fq_fwd.format(**wildcards)
+        fq_rev_wc = fq_rev.format(**wildcards)
+        sig_name_wc = sig_name.format(**wildcards)
+        merge_file_wc = merge_file.format(**wildcards)
+        shell('''
+            docker run \
+                    -v {PWD}:/data \
+                    {quayurl} \
+                    sourmash compute \
+                    --merge /data/{merge_file_wc} \
+                    --track-abundance \
+                    --scaled 10000 \
+                    -k 21,31,51 \
+                    /data/{fq_fwd_wc} \
+                    /data/{fq_rev_wc} \
+                    -o /data/{sig_name_wc}
+        ''')
+

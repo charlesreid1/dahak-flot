@@ -50,14 +50,14 @@ include: 'taxclass.settings'
 # Rules:
 # ------------
 
-include: 'pull_biocontainers.rule'
-include: 'sourmash_sbts.rule'
-include: 'download_trimmed_data.rule'
-include: 'calculate_signatures.rule'
-include: 'kaiju.rule'
-include: 'kaiju2krona.rule'
-include: 'filter_taxa.rule'
-include: 'visualize_krona.rule'
+include: 'rules/pull_biocontainers.rule'
+include: 'rules/sourmash_sbts.rule'
+include: 'rules/download_trimmed_data.rule'
+include: 'rules/calculate_signatures.rule'
+include: 'rules/kaiju.rule'
+include: 'rules/kaiju2krona.rule'
+include: 'rules/filter_taxa.rule'
+include: 'rules/visualize_krona.rule'
 
 
 

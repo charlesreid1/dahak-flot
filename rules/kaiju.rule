@@ -1,0 +1,58 @@
+kaiju_dmp = 'nodes.dmp'
+kaiju_dmp2 = 'names.dmp'
+kaiju_fmi = 'kaiju_db_nr_euk.fmi'
+kaiju_tar = 'kaiju_index_nr_euk.tgz'
+kaiju_url = 'http://kaiju.binf.ku.dk/database'
+
+kaiju_output = [kaiju_dmp, kaiju_dmp2, kaiju_fmi]
+unpack_kaiju_input = HTTP.remote(kaiju_url)
+
+rule unpack_kaiju:
+    """
+    Download and unpack the kaiju database.
+    The ( ) notation in the shell creates a temporary scope.
+    """
+    output:
+        unpack_kaiju_output
+    shell:
+        '''
+        curl -LO "{kaiju_url}/{kaiju_tar}"
+        tar xzf {kaiju_tar}
+        rm -f {kaiju_tar}
+        '''
+
+
+
+run_kaiju_input = [kaiju_dmp, kaiju_fmi]
+run_kaiju_input += fq_names
+run_kaiju_output = '{base}.kaiju_output.trim{ntrim}.out'
+
+quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
+
+rule run_kaiju:
+    """
+    Run kaiju
+    """
+    input:
+        run_kaiju_input
+    output:
+        run_kaiju_output
+    run:
+        fq_fwd_wc = fq_fwd.format(**wildcards)
+        fq_rev_wc = fq_rev.format(**wildcards)
+        run_kaiju_output_wc = run_kaiju_output.format(**wildcards)
+        shell('''
+            docker run \
+                    -v {PWD}:/data \
+                    {quayurl} \
+                    kaiju \
+                    -x \
+                    -v \
+                    -t /data/{kaiju_dmp} \
+                    -f /data/{kaiju_fmi} \
+                    -i /data/{fq_fwd_wc} \
+                    -j /data/{fq_rev_wc} \
+                    -o /data/{run_kaiju_output_wc} \
+                    -z 4
+        ''')
+
