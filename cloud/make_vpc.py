@@ -5,6 +5,7 @@ import string
 import random
 from botocore.exceptions import ClientError
 from pprint import pprint
+from datetime import datetime
 
 # Create/modify sec groups:
 # https://gist.github.com/steder/1498451
@@ -86,6 +87,18 @@ def main():
     print("  Successfully created security group %s (%s)"%(sg_id, sg_label))
     print("\n")
 
+    # Right now, this is okay.
+    # Preferable method is to save 
+    # the entire JSON, in case we want
+    # more information down the road.
+    fname = datetime.now().strftime("aws_%Y-%m-%d_at_%H-%M-%S.file")
+    with open(fname,'w') as f:
+        print("vpc_id: %s"%(vpc_id)         ,file=f)
+        print("vpc_label: %s"%(vpc_label)   ,file=f)
+        print("subnet_id: %s"%(subnet_id)   ,file=f)
+        print("sg_id: %s"%(sg_id)           ,file=f)
+        print("sg_label: %s"%(sg_label)     ,file=f)
+
 
 def create_dahak_vpc(prefix, ec2, vpc_rule):
     """
@@ -117,6 +130,7 @@ def create_dahak_security_group(prefix, ec2c, vpc_id, ip_settings):
                                              VpcId=vpc_id)
 
         security_group_id = response['GroupId']
+
         print('Created Security Group %s in VPC %s'%(security_group_id, vpc_id))
     
         ip_permissions = []
@@ -159,7 +173,13 @@ def parse_vpc_response(response,ix=0):
 
 def random_label():
     # Generate a random label to uniquely identify this group
-    label = ''.join(random.choices(string.ascii_uppercase,k=1)+random.choices(string.ascii_uppercase + string.digits, k=5))
+    
+    a1 = random.choices(string.ascii_uppercase,k=2)
+    a2 = random.choices(string.digits,k=1)
+    a3 = random.choices(string.ascii_uppercase,k=2)
+
+    label = ''.join(a1+a2+a3)
+
     return label
 
 
@@ -168,7 +188,7 @@ def random_ip():
     Return a random IP of the form
     10.*.0.0
     """
-    block = random.randint(100,250)
+    block = random.randint(10,99)
     return '10.%d.0.0'%(block)
 
 
