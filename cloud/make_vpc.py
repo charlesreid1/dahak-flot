@@ -38,7 +38,7 @@ def main():
     base_ip = random_ip()
     label = random_label()
 
-    print("Random IP for VPC Subnet: %s"%(base_ip))
+    print("Random IP for VPC Network: %s"%(base_ip.format(addr=0)))
     print("Random Label for Asset Group: %s"%(label))
     print("\n")
 
@@ -56,10 +56,13 @@ def main():
     ###################################
     # VPC Settings:
 
+    vpc_cidr = base_ip.format(addr=0)+"/16"
+    subnet_cidr = base_ip.format(addr=0)+"/24"
+
     # vpc cidr block
     # vpc subnet cidr block
-    vpc_rule = VPCRule( vpc_ip = '%s/16'%(base_ip),
-                     subnet_ip = '%s/24'%(base_ip))
+    vpc_rule = VPCRule( vpc_ip = vpc_cidr,
+                        subnet_ip = subnet_cidr)
 
     print("Creating VPC %s_vpc"%(label))
 
@@ -74,7 +77,7 @@ def main():
     # Security Group Settings:
 
     # add subnet ips to allowed group
-    addr += ['%s/16'%(base_ip)]
+    addr += ['%s/16'%(base_ip.format(addr=0))]
 
     ip_settings = {}
     for p in ports:
@@ -84,15 +87,21 @@ def main():
 
     (sg_id,sg_label) = create_dahak_security_group(label, ec2c, vpc_id, ip_settings)
     
-    print("  Successfully created security group %s (%s)"%(sg_id, sg_label))
+    print("  Success!")
+    print("  Security group: %s (%s)"%(sg_id, sg_label))
     print("\n")
+
+    ###################################
+    # Save VPC Info To File:
 
     # Right now, this is okay.
     # Preferable method is to save 
     # the entire JSON, in case we want
     # more information down the road.
-    fname = datetime.now().strftime("aws_%Y-%m-%d_at_%H-%M-%S.file")
+    fname = datetime.now().strftime("vpc_%Y-%m-%d_at_%H-%M-%S.file")
     with open(fname,'w') as f:
+        print("label: %s"%(label)           ,file=f)
+        print("base_ip: %s"%(base_ip.format(addr=0)), file=f)
         print("vpc_id: %s"%(vpc_id)         ,file=f)
         print("vpc_label: %s"%(vpc_label)   ,file=f)
         print("subnet_id: %s"%(subnet_id)   ,file=f)
@@ -104,15 +113,29 @@ def create_dahak_vpc(prefix, ec2, vpc_rule):
     """
     Create dahak vpc
     """
-    label = prefix + "_vpc"
+    vpc_label = prefix + "_vpc"
 
     try:
         vpc = ec2.create_vpc(CidrBlock = vpc_rule.vpc_ip)
-        subnet = vpc.create_subnet(CidrBlock = vpc_rule.subnet_ip)
+        subnet = vpc.create_subnet(CidrBlock = vpc_rule.subnet_ip,
+                                   AvailabilityZone = 'us-west-1a')
+
+        dhcp_options = ec2.create_dhcp_options(
+                DhcpConfigurations = [{
+                    'Key':'domain-name-servers',
+                    'Values':['AmazonProvidedDNS']
+                },
+                {
+                    'Key': 'domain-name',
+                    'Values': ['us-west-1.compute.internal']
+                }]
+        )
+        dhcp_options.associate_with_vpc(VpcId=vpc.id)
+
         gateway = ec2.create_internet_gateway()
         gateway.attach_to_vpc(VpcId=vpc.id)
 
-        return (vpc.id,subnet.id,label)
+        return (vpc.id,subnet.id,vpc_label)
 
     except ClientError as e:
     
@@ -174,9 +197,9 @@ def parse_vpc_response(response,ix=0):
 def random_label():
     # Generate a random label to uniquely identify this group
     
-    a1 = random.choices(string.ascii_uppercase,k=2)
+    a1 = random.choices(string.ascii_lowercase,k=2)
     a2 = random.choices(string.digits,k=1)
-    a3 = random.choices(string.ascii_uppercase,k=2)
+    a3 = random.choices(string.ascii_lowercase,k=2)
 
     label = ''.join(a1+a2+a3)
 
@@ -188,8 +211,8 @@ def random_ip():
     Return a random IP of the form
     10.*.0.0
     """
-    block = random.randint(10,99)
-    return '10.%d.0.0'%(block)
+    block = random.randint(15,99)
+    return "10.%d.0.{addr}"%(block)
 
 
 if __name__=="__main__":
