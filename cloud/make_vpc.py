@@ -147,6 +147,13 @@ def create_dahak_vpc(prefix, ec2, ec2c, vpc_rule):
         gateway = ec2.create_internet_gateway()
         gateway.attach_to_vpc(VpcId = vpc.id)
 
+        #Create a Route table and add the route
+        route_table = ec2c.create_route_table(VpcId=vpc.vpc_id)
+        route_table_id = route_table['RouteTable']['RouteTableId']
+        response = ec2c.create_route( DestinationCidrBlock = '0.0.0.0/0',
+                                      RouteTableId = route_table_id,
+                                      GatewayId = gateway.internet_gateway_id )
+
         return (vpc.id,subnet.id,vpc_label)
 
     except ClientError as e:

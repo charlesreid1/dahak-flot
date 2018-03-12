@@ -92,17 +92,17 @@ def main():
         print("private_ip: %s"%(net['NetworkInterface']['PrivateIpAddress']),             file=f)
         print("vpc_id: %s"%(net['NetworkInterface']['VpcId']),                            file=f)
 
-    ## Include these lines next time this script is run,
-    ## there is a lot of useful info we should include from spy{}
-    #import pdb; pdb.set_trace()
-    #print(spy.keys())
+    # Include these lines next time this script is run,
+    # there is a lot of useful info we should include from spy{}
+    import pdb; pdb.set_trace()
+    print(spy.keys())
 
 
 def make_network_json(vpc_params_file):
 
     vpc_params = get_vpc_params(vpc_params_file)
 
-    private_ip = re.sub('0\.0$','0.%d'%(111),vpc_params['base_ip']).strip()
+    private_ip = re.sub('0\.0$','0.%d'%( random.randiint(100,250) ),vpc_params['base_ip']).strip()
 
     # https://boto3.readthedocs.io/en/stable/reference/services/ec2.html#EC2.Client.create_network_interface
     net_json = {
