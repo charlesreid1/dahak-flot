@@ -7,8 +7,8 @@ This document walks you through running Snakemake workflows.
 If you don't already have snakemake installed, 
 start by installing pyenv, and use pyenv to install conda.
 The steps below will cover how to install snakemake.
-(Also see [install_pyenv.py](https://github.com/charlesreid1/dahak-yeti/blob/master/scripts/install_pyenv.py) 
-and [install_snakemake.py](https://github.com/charlesreid1/dahak-yeti/blob/master/scripts/install_snakemake.py)
+(Also see [install_pyenv.py](https://github.com/charlesreid1/dahak-yeti/blob/master/user_init/install_pyenv.py) 
+and [install_snakemake.py](https://github.com/charlesreid1/dahak-yeti/blob/master/user_init/install_snakemake.py)
 scripts in [dahak-yeti](https://github.com/charlesreid1/dahak-yeti)).
 
 If you are using the preferred method of managing conda
