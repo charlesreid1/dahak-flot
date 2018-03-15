@@ -94,6 +94,12 @@ def main():
     ###################################
     # Save VPC Info To File:
 
+    # call api to get info about vpc networks
+    # save info to json dotfiles
+    # 
+    # remember, focusing on a single subnet architecture,
+    # so we don't need to bother with multiple vpcs.
+
     # Right now, this is okay.
     # Preferable method is to save 
     # the entire JSON, in case we want

@@ -87,6 +87,7 @@ def main():
         raise
 
     fname = datetime.now().strftime("spy_%Y-%m-%d_at_%H-%M-%S.file")
+
     with open(fname,'w') as f:
         print("network_interface_id: %s"%(net['NetworkInterface']['NetworkInterfaceId']), file=f)
         print("private_ip: %s"%(net['NetworkInterface']['PrivateIpAddress']),             file=f)
