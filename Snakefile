@@ -59,6 +59,9 @@ include: 'rules/kaiju2krona.rule'
 include: 'rules/filter_taxa.rule'
 include: 'rules/visualize_krona.rule'
 
+onsuccess:
+    shell("rm -f .pulled_containers")
+    shell("rm -f .trimmed")
 
 
 # NOTE:
@@ -80,17 +83,5 @@ include: 'rules/visualize_krona.rule'
 # We also have problems with prefix directories being 
 # matched in wildcards, so we can't put data in its
 # own directory without more acrobatics.
-
-### rule cleanreally:
-###     """
-###     This nukes everything - all that hard work! Be careful.
-###     """
-###     shell:
-###         '''
-###         '''
-
-## NOTE: Add this back in once we're finished testing.
-#onsuccess:
-#    shell("rm -f .pulled_containers")
-#    shell("rm -f .trimmed")
+# This currently makes a mess in the current directory. :(
 
