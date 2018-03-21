@@ -1,12 +1,34 @@
-filter_taxa_total_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
-filter_taxa_total_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percenttotal.summary'
+include: "kaiju.settings"
+include: "filter_taxa.settings"
+
+# needs, but does not set, 
+# data_dir
+
+data_dir = config['data_dir']
+
+kaiju_dmp1   = config['kaiju']['dmp1']
+kaiju_dmp2   = config['kaiju']['dmp2']
+
+# name of kaiju output determines name of kaiju2krona input
+run_kaiju_output = config['kaiju']['out']
 
 quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
 
+pct = config['filter_taxa']['pct_threshold']
+
+
+# ---
+
+
+filter_taxa_total_input = [join(data_dir,d) for d in [kaiju_dmp, kaiju_dmp2, run_kaiju_output]]
+filter_taxa_total_suffix = '\.kaiju_out_krona.%dpercenttotal.summary'%(pct)
+filter_taxa_total_output = re.sub('\.out',filter_taxa_total_suffix,config['kaiju']['out'])
+
 rule filter_taxa_total:
     """
-    Filter out taxa with low abundances by obtaining genera that 
-    comprise at least 1 percent of the total reads:
+    Filter out taxa with low abundances by obtaining genera that
+    comprise at least {pct} percent of the total reads
+    (default: 1%)
     """
     input:
         filter_taxa_total_input
@@ -17,15 +39,15 @@ rule filter_taxa_total:
         filter_taxa_total_output_wc = filter_taxa_total_output.format(**wildcards)
         shell('''
             docker run \
-                -v {PWD}:/data \
+                -v {PWD}/{data_dir}:/data \
                 {quayurl} \
                 kaijuReport \
                 -v \
-                -t /data/{kaiju_dmp} \
+                -t /data/{kaiju_dmp1} \
                 -n /data/{kaiju_dmp2} \
-                -i /data/{filter_taxa_in_wc} \
+                -i /data/{filter_taxa_total_in_wc} \
                 -r genus \
-                -m 1 \
+                -m {pct} \
                 -o /data/{filter_taxa_total_output_wc}
         ''')
 
@@ -36,12 +58,11 @@ rule filter_taxa_total:
 filter_taxa_class_input = [kaiju_dmp, kaiju_dmp2, run_kaiju_output]
 filter_taxa_class_output = '{base}.kaiju_output.trim{ntrim}.kaiju_out_krona.1percentclassified.summary'
 
-quayurl = config['kaiju']['quayurl'] + ":" + config['kaiju']['version']
-
 rule filter_taxa_class:
     """
-    For comparison, take the genera that comprise 
-    at least 1 percent of all of the classified reads
+    For comparison, take the genera that comprise
+    at least {pct} percent of all of the classified reads
+    (default: 1%)
     """
     input:
         filter_taxa_class_input
@@ -56,12 +77,15 @@ rule filter_taxa_class:
                         {quayurl} \
                         kaijuReport \
                         -v \
-                        -t /data/{kaiju_dmp} \
+                        -t /data/{kaiju_dmp1} \
                         -n /data/{kaiju_dmp2} \
                         -i /data/{filter_taxa_class_in_wc} \
                         -r genus \
-                        -m 1 \
+                        -m {pct} \
                         -u \
                         -o /data/{filter_taxa_class_output_wc}
         ''')
+
+
+
 

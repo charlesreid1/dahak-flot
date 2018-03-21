@@ -1,45 +1,22 @@
-import subprocess
-import glob
-import os
+from os.path import join
 
-"""
-Taxonomic Classification Snakefile
+## Set your custom configuration here
+#config = {
+#    'application': {
+#        'component': {
+#            'setting': 'vaue'
+#        }
+#    }
+#}
 
-This Snakefile defines tasks for the taxonomic
-classification workflow.
+SNAKEMAKE_RULES_PATH = "rules/"
 
-Todo:
-    - Incorporate OSF CLI tool
-    - Move variables that won't change often into .settings files
-    - Move rules into individual rule files
-"""
-
-
-# Need PWD for Docker
-PWD = os.getcwd()
-
-
-# Settings:
-# --------------------
-
-# Settings common to all 
-# taxonomic classification workflows
-include: 'taxclass.settings'
-
-
-# Taxonomic Classification Rules:
-# ------------------------------------
-
-include: 'rules/pull_biocontainers.rule'
-include: 'rules/sourmash_sbts.rule'
-include: 'rules/download_trimmed_data.rule'
-include: 'rules/calculate_signatures.rule'
-include: 'rules/kaiju.rule'
-include: 'rules/kaiju2krona.rule'
-include: 'rules/filter_taxa.rule'
-include: 'rules/visualize_krona.rule'
-
-onsuccess:
-    shell("rm -f .pulled_containers")
-    shell("rm -f .trimmed")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/biocontainers.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/sourmash_sbt.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/calculate_signatures.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/trimmed_data.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/kaiju.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/kaiju2krona.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/filter_taxa.rule")
+include: join(SNAKEMAKE_RULES_PATH, "dahak/krona_visualization.rule")
 

@@ -1,6 +1,17 @@
-sourmash_sbt_tar = "microbe-{database}-sbt-k{ksize}-2017.05.09.tar.gz"
+include "sourmash_sbt.settings"
+
+# needs, but does not set, 
+# database, ksize, data_dir
+
+from os.path import join
+from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
+HTTP = HTTPRemoteProvider()
+
+data_dir = config['data_dir']
+sourmash_sbt_tar = config['sourmash']['sbttar']
+
 download_sourmash_sbt_input = HTTP.remote(config['sourmash']['sbturl']+"/" + sourmash_sbt_tar)
-download_sourmash_sbt_output = download_sourmash_sbt_tar
+download_sourmash_sbt_output = join(data_dir,sourmash_sbt_tar)
 
 rule download_sourmash_sbts:
     """
@@ -9,18 +20,17 @@ rule download_sourmash_sbts:
     To call this rule, request sourmash SBT json file for the specified database.
     """
     input: 
-        '.pulled_containers', 
+        join(data_dir,'.pulled_containers'),
         download_sourmash_sbt_input
     output: 
         download_sourmash_sbt_output
     shell:
         '''
-        curl -O {input[1]}
+        wget -O {output} {input[1]}
         '''
 
-
-unpack_sourmash_sbt_input = sourmash_sbt_tar
-unpack_sourmash_sbt_output = '{database}-k{ksize}.sbt.json'
+unpack_sourmash_sbt_input = join(data_dir,config['sourmash']['sbttar'])
+unpack_sourmash_sbt_output = join(data_dir,config['sourmash']['sbtunpack'])
 
 rule unpack_sourmash_sbts:
     """
@@ -35,5 +45,4 @@ rule unpack_sourmash_sbts:
         shell('''
             tar xzf {unpack_sourmash_sbt_tar_wc} && rm -f {unpack_sourmash_sbt_tar_wc}
         ''')
-
 
